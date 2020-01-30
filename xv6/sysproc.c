@@ -18,23 +18,35 @@ int
 sys_exit(void)
 {
 
-  int status = 0;
+  int exitstatus;
 
-  exit(status);
+  if (argint(0, &exitstatus) < 0) return -1; // If we don't get our argument
+
+  exit(exitstatus);
+
   return 0;  // not reached
 }
 
 // Lab1: Updated
 int
-sys_wait(int* status)
+sys_wait(void)
 {
-  return wait(status);
+
+  char* exitstatus; // The argptr function only works with a char pointer so we use a char here
+
+  if (argptr(0, &exitstatus, 8) < 0) return -1; // If we don't get our argument
+
+  return wait( (int*) exitstatus); // Cast the char ptr back into a int ptr
 }
 
 // Lab1: created to enable waitpid
 int sys_waitpid(void) {
-  int pid = -1, *status = 0, options = 0;
-  return waitpid(pid, status, options);
+  int pid, options;
+  char* exitstatus; // The argptr function only works with a char pointer so we use a char here
+
+  if((argint(0, &pid) < 0) || (argptr(1, &exitstatus, 8) < 0) || (argint(2, &options) < 0)) return -1; // Check that we get all our arguments
+
+  return waitpid(pid, (int*) exitstatus, options);
 }
 
 int
