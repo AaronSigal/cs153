@@ -276,7 +276,7 @@ int
 wait(int* status)
 {
   struct proc *p;
-  int havekids, pid, exitstatus = -1; // Lab1: Added exitstatus field
+  int havekids, pid; // Lab1: Added exitstatus field
   struct proc *curproc = myproc();
 
   acquire(&ptable.lock);
@@ -290,7 +290,6 @@ wait(int* status)
       if(p->state == ZOMBIE){
         // Found one.
         pid = p->pid;
-        exitstatus = p->exitstatus;
         kfree(p->kstack);
         p->kstack = 0;
         freevm(p->pgdir);
@@ -299,6 +298,10 @@ wait(int* status)
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
+
+        if (status) *status = p->exitstatus; // Lab1: Set status if it exists
+
+
         release(&ptable.lock);
         return pid;
       }
@@ -310,10 +313,6 @@ wait(int* status)
       return -1;
     }
 
-    // Lab1: Update the parameter pointer if it isn't null
-    if (status != NULL)
-      *status = exitstatus;
-
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(curproc, &ptable.lock);  //DOC: wait-sleep
   }
@@ -324,21 +323,20 @@ int
 waitpid(int pid, int *status, int options)
 {
   struct proc *p;
-  int havekids, _pid, exitstatus = -1; // Lab1: Added exitstatus field
   struct proc *curproc = myproc();
+  int havekids;
 
   acquire(&ptable.lock);
   for(;;){
     // Scan through table looking for exited children.
     havekids = 0;
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->pid != pid)
-        continue; // check if PID is the one we were passed in, skip if it isn't
+      if(p->parent != curproc)
+        continue;
       havekids = 1;
-      if(p->state == ZOMBIE){ // Check if process is done
+      if(p->pid == pid){
         // Found one.
-        _pid = p->pid;
-        exitstatus = p->exitstatus;
+        pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
         freevm(p->pgdir);
@@ -347,8 +345,11 @@ waitpid(int pid, int *status, int options)
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
+
+        if (status) *status = p->exitstatus; // Lab1: Set status if it exists
+
         release(&ptable.lock);
-        return _pid;
+        return pid;
       }
     }
 
@@ -357,10 +358,6 @@ waitpid(int pid, int *status, int options)
       release(&ptable.lock);
       return -1;
     }
-
-    // Lab1: Update the parameter pointer if it isn't null
-    if (status != NULL)
-      *status = exitstatus;
 
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(curproc, &ptable.lock);  //DOC: wait-sleep
