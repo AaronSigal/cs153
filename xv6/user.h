@@ -6,6 +6,7 @@ int fork(void);
 void exit(int status); // Modified per Lab1's request
 int wait(int* status); // Lab1: Added declaration
 int waitpid(int pid, int *status, int options); // Lab1: Added declaration
+int setpriority(int); // Lab 2: Added declaration
 int pipe(int*);
 int write(int, const void*, int);
 int read(int, void*, int);

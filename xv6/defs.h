@@ -119,6 +119,7 @@ void            sleep(void*, struct spinlock*);
 void            userinit(void);
 int             wait(int* status);                          // Lab1: updated
 int             waitpid(int pid, int *status, int options); // Lab1: Added to enable waitpid
+int             setpriority(int priority);                  // Lab2: Added to enable setpriority
 void            wakeup(void*);
 void            yield(void);
 
@@ -162,7 +163,7 @@ void            timerinit(void);
 
 // trap.c
 void            idtinit(void);
-extern uint     ticks;
+extern uint     ticks;              // Lab 2: Tracks time for Lab 2 (bonus) (thanks google)
 void            tvinit(void);
 extern struct spinlock tickslock;
 

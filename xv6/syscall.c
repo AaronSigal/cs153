@@ -101,7 +101,8 @@ extern int sys_sbrk(void);
 extern int sys_sleep(void);
 extern int sys_unlink(void);
 extern int sys_wait(void);
-extern int sys_waitpid(void); // Lab1: Added to enable waitpid
+extern int sys_waitpid(void);     // Lab 1: Added to enable waitpid
+extern int sys_setpriority(void); // Lab 2: Added to enable setpriority
 extern int sys_write(void);
 extern int sys_uptime(void);
 
@@ -109,7 +110,8 @@ static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
 [SYS_exit]    sys_exit,
 [SYS_wait]    sys_wait,
-[SYS_waitpid] sys_waitpid, // Lab1: Added to enable waitpid
+[SYS_waitpid] sys_waitpid,          // Lab1: Added to enable waitpid
+[SYS_setpriority] sys_setpriority,  // Lab2: Added tp enable setpriority
 [SYS_pipe]    sys_pipe,
 [SYS_read]    sys_read,
 [SYS_kill]    sys_kill,

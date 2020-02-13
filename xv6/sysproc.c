@@ -49,6 +49,17 @@ int sys_waitpid(void) {
   return waitpid(pid, (int*) exitstatus, options);
 }
 
+// Lab 2: Created to enable setpriority
+int
+sys_setpriority(void)
+{
+  char* priority;
+  if(argptr(0, &priority, 8) < 0) return -1;
+
+  return setpriority((int)priority);
+}
+
+
 int
 sys_kill(void)
 {

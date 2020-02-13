@@ -8,6 +8,9 @@
 #include "spinlock.h"
 #include "stdio.h"
 
+#include <time.h> // Lab 2
+#include <stdio.h> // Lab 2
+
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
@@ -217,6 +220,8 @@ fork(void)
 
   np->state = RUNNABLE;
 
+  np->starttime = ticks; // Lab 2: Updates start time of new process
+
   release(&ptable.lock);
 
   return pid;
@@ -233,6 +238,10 @@ exit(int status)
   int fd;
 
   curproc->exitstatus = status; // Lab1: Passes the exit status from the function call to the proc structure
+
+  int elapsedtime = ticks - curproc->starttime;                  // Lab2: Calculate elapsed time since start (bonus)
+  cprintf("Turnaround (elapsed) time: %d %s\n", elapsedtime, "ticks."); // Lab 2: Print (bonus)
+  cprintf("Wait time: %d %s\n", curproc->waittime, "ticks.");           // Lab 2: Print (bonus)
 
   if(curproc == initproc)
     panic("init exiting");
@@ -364,6 +373,23 @@ waitpid(int pid, int *status, int options)
   }
 }
 
+// Lab 2: Sets the priority of a process. This is a system call.
+int setpriority(int priority) {
+
+  struct proc *curproc = myproc(); // Grab the current proccess
+
+  if (!curproc) { // Check if we failed to grab.
+    return -1; // Terminate
+  }
+
+  acquire(&ptable.lock);         // Get the semaphore to modify the priority of the current proccss
+  curproc-> priority = priority; // Modify the priority of the current proccess
+  release(&ptable.lock);         // Release the lock
+
+  return 0;
+
+}
+
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
 // Each CPU calls scheduler() after setting itself up.
@@ -389,6 +415,23 @@ scheduler(void)
       if(p->state != RUNNABLE)
         continue;
 
+      struct proc *s;
+      //Lab 2: Increase the priority of all the waiting processes. LOWER IS BETTER
+      for (s = ptable.proc; s < &ptable.proc[NPROC]; s++) {
+        if (s -> priority > 0) s -> priority = s -> priority - 1;
+      }
+      //Lab 2: Set p to the procceess with the highest priority (the lowest value) that is also ready
+      for (s = ptable.proc; s < &ptable.proc[NPROC]; s++) {
+        if (s -> state == RUNNABLE && s -> priority < p -> priority) p = s;
+      }
+
+      for (s = ptable.proc; s < &ptable.proc[NPROC]; s++) {
+        if (s->state != RUNNABLE) continue;
+
+          if (s != p) s -> waittime = ticks - s -> starttime; // Ensure that we aren't changing the currently-running proc
+
+      }
+
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
@@ -398,6 +441,13 @@ scheduler(void)
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
+
+      //if (s -> priority <= 29) {
+          s -> priority += 2; // Lab 2: Decrease the priority the running proccss.
+                              // By 2 since only doing 1 would cause it to
+                              // slingshot back and forth, defeating the purpose of aging.
+      //}
+
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
