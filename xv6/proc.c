@@ -8,9 +8,6 @@
 #include "spinlock.h"
 #include "stdio.h"
 
-// #include <time.h> // Lab 2
-// #include <stdio.h> // Lab 2
-
 struct {
   struct spinlock lock;
   struct proc proc[NPROC];
