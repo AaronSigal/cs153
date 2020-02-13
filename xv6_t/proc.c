@@ -8,8 +8,8 @@
 #include "spinlock.h"
 #include "stdio.h"
 
-// #include <time.h> // Lab 2
-// #include <stdio.h> // Lab 2
+#include <time.h> // Lab 2
+#include <stdio.h> // Lab 2
 
 struct {
   struct spinlock lock;
@@ -442,13 +442,11 @@ scheduler(void)
       swtch(&(c->scheduler), p->context);
       switchkvm();
 
-      if (s -> priority <= 29) {
-          p -> priority += 2; // Lab 2: Decrease the priority the running proccss.
+      //if (s -> priority <= 29) {
+          s -> priority += 2; // Lab 2: Decrease the priority the running proccss.
                               // By 2 since only doing 1 would cause it to
                               // slingshot back and forth, defeating the purpose of aging.
-      } else if (s-> priority < 31) {
-        p -> priority += 1;
-      }
+      //}
 
 
       // Process is done running for now.
