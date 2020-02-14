@@ -415,7 +415,9 @@ scheduler(void)
       struct proc *s;
       //Lab 2: Increase the priority of all the waiting processes. LOWER IS BETTER
       for (s = ptable.proc; s < &ptable.proc[NPROC]; s++) {
-        if (s -> priority > 0) s -> priority = s -> priority - 1;
+        if (s -> priority > 0) s -> priority = s -> priority - 1;    // Increase setpriority
+        if (s-> priority < 0 || s-> priority > 31) s->priority = 10; // If the priority has gone out of bounds, set it
+                                                                     // to a reasonable guess
       }
       //Lab 2: Set p to the procceess with the highest priority (the lowest value) that is also ready
       for (s = ptable.proc; s < &ptable.proc[NPROC]; s++) {

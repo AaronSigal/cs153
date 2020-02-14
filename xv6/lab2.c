@@ -5,7 +5,7 @@
 
 int exitWait(void);
 int waitPid(void);
-int CELEBW02(void);
+int priority(void);
 
 int main(int argc, char *argv[])
 {
@@ -15,8 +15,8 @@ int main(int argc, char *argv[])
 	exitWait();
   else if (atoi(argv[1]) == 2)
 	waitPid();
-  //else if (atoi(argv[1]) == 3)
-	//CELEBW02();
+  else if (atoi(argv[1]) == 3)
+	priority();
   else
    printf(1, "\ntype \"lab1 1\" to test exit and wait, \"lab1 2\" to test waitpid and \"lab1 3\" to test the extra credit WNOHANG option \n");
 
@@ -98,31 +98,23 @@ int waitPid(void){
       return 0;
   }
 
-int CELEBW02(void){
+int priority(void){
+  printf(1, "\n  Testing the manual setting of priority \n");
 
- printf(1, "\n  Part e) the waitpid option WNOHANG, test program CELEBW02 \n");
+  //int ret_pid, exit_status;
+  int i;
+  int pid_a[2]={0, 0};
 
-  int pid, retpid;
-  int status;
+  for (i = 0; i <2; i++) {
+		pid_a[i] = fork();
+		if (pid_a[i] == 0) { // only the child executed this code
+			printf(1, "\n The is child with PID# %d, I should finish immediately\n", getpid(), getpid() + 4);
+      setpriority(0);
+			exit(getpid() + 4);
+		}
+	}
 
-  if ((pid = fork()) < 0)
-    printf(2, "fork() error");
-  else if (pid == 0) {
-    sleep(5);
-    exit(1);
-  }
-  else do {
-    if ((retpid = waitpid(pid, &status, WNOHANG)) == -1)
-      printf(2, "wait() error");
-    else if (retpid == 0) {
-      printf(1, "child is still running \n");
-      sleep(1);
-    }
-    else {
-        printf(1, "child exited with status of %d\n", status);
-    }
-  } while (retpid == 0);
+
 
   return 0;
-
-  }
+}
