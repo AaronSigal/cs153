@@ -21,6 +21,8 @@ exec(char *path, char **argv)
 
   begin_op();
 
+  curproc->pages = 1; // Lab 3
+
   if((ip = namei(path)) == 0){
     end_op();
     cprintf("exec: fail\n");
@@ -60,13 +62,14 @@ exec(char *path, char **argv)
   end_op();
   ip = 0;
 
+  // Lab 3
   // Allocate two pages at the next page boundary.
   // Make the first inaccessible.  Use the second as the user stack.
   sz = PGROUNDUP(sz);
-  if((sz = allocuvm(pgdir, sz, sz + 2*PGSIZE)) == 0)
+  if((sp = allocuvm(pgdir, STACK - PGSIZE, STACK)) == 0)
     goto bad;
-  clearpteu(pgdir, (char*)(sz - 2*PGSIZE));
-  sp = sz;
+  //clearpteu(pgdir, (char*)(sz - 2*PGSIZE));
+  //sp = STACK - PGSIZE;
 
   // Push argument strings, prepare rest of stack in ustack.
   for(argc = 0; argv[argc]; argc++) {

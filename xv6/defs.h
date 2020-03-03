@@ -104,7 +104,7 @@ int             pipewrite(struct pipe*, char*, int);
 //PAGEBREAK: 16
 // proc.c
 int             cpuid(void);
-void            exit(int status);
+void            exit(void);
 int             fork(void);
 int             growproc(int);
 int             kill(int);
@@ -117,9 +117,7 @@ void            sched(void);
 void            setproc(struct proc*);
 void            sleep(void*, struct spinlock*);
 void            userinit(void);
-int             wait(int* status);                          // Lab1: updated
-int             waitpid(int pid, int *status, int options); // Lab1: Added to enable waitpid
-int             setpriority(int priority);                  // Lab2: Added to enable setpriority
+int             wait(void);
 void            wakeup(void*);
 void            yield(void);
 
@@ -163,7 +161,7 @@ void            timerinit(void);
 
 // trap.c
 void            idtinit(void);
-extern uint     ticks;              // Lab 2: Tracks time for Lab 2 (bonus) (thanks google)
+extern uint     ticks;
 void            tvinit(void);
 extern struct spinlock tickslock;
 
@@ -187,6 +185,15 @@ void            switchuvm(struct proc*);
 void            switchkvm(void);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
+
+//made mappages visible (and removed static) to facilitate implementing shm
+int
+mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm);
+
+//shm.c
+void shminit(void);
+int shm_open(int id, char **pointer);
+int shm_close(int id);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

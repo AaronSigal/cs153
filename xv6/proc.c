@@ -6,7 +6,6 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
-#include "stdio.h"
 
 struct {
   struct spinlock lock;
@@ -39,10 +38,10 @@ struct cpu*
 mycpu(void)
 {
   int apicid, i;
-
+  
   if(readeflags()&FL_IF)
     panic("mycpu called with interrupts enabled\n");
-
+  
   apicid = lapicid();
   // APIC IDs are not guaranteed to be contiguous. Maybe we should have
   // a reverse map, or reserve a register to store &cpus[i].
@@ -125,7 +124,7 @@ userinit(void)
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
   p = allocproc();
-
+  
   initproc = p;
   if((p->pgdir = setupkvm()) == 0)
     panic("userinit: out of memory?");
@@ -217,8 +216,6 @@ fork(void)
 
   np->state = RUNNABLE;
 
-  np->starttime = ticks; // Lab 2: Updates start time of new process
-
   release(&ptable.lock);
 
   return pid;
@@ -228,17 +225,11 @@ fork(void)
 // An exited process remains in the zombie state
 // until its parent calls wait() to find out it exited.
 void
-exit(int status)
+exit(void)
 {
   struct proc *curproc = myproc();
   struct proc *p;
   int fd;
-
-  curproc->exitstatus = status; // Lab1: Passes the exit status from the function call to the proc structure
-
-  int elapsedtime = ticks - curproc->starttime;                  // Lab2: Calculate elapsed time since start (bonus)
-  cprintf("Turnaround (elapsed) time: %d %s\n", elapsedtime, "ticks."); // Lab 2: Print (bonus)
-  cprintf("Wait time: %d %s\n", curproc->waittime, "ticks.");           // Lab 2: Print (bonus)
 
   if(curproc == initproc)
     panic("init exiting");
@@ -279,12 +270,12 @@ exit(int status)
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
 int
-wait(int* status)
+wait(void)
 {
   struct proc *p;
-  int havekids, pid; // Lab1: Added exitstatus field
+  int havekids, pid;
   struct proc *curproc = myproc();
-
+  
   acquire(&ptable.lock);
   for(;;){
     // Scan through table looking for exited children.
@@ -304,10 +295,6 @@ wait(int* status)
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
-
-        if (status) *status = p->exitstatus; // Lab1: Set status if it exists
-
-
         release(&ptable.lock);
         return pid;
       }
@@ -322,69 +309,6 @@ wait(int* status)
     // Wait for children to exit.  (See wakeup1 call in proc_exit.)
     sleep(curproc, &ptable.lock);  //DOC: wait-sleep
   }
-}
-
-// Lab1: Makes a process wait for a child with a specific PID to terminate before it can move on.
-int
-waitpid(int pid, int *status, int options)
-{
-  struct proc *p;
-  struct proc *curproc = myproc();
-  int havekids;
-
-  acquire(&ptable.lock);
-  for(;;){
-    // Scan through table looking for exited children.
-    havekids = 0;
-    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-      if(p->parent != curproc)
-        continue;
-      havekids = 1;
-      if(p->pid == pid){
-        // Found one.
-        pid = p->pid;
-        kfree(p->kstack);
-        p->kstack = 0;
-        freevm(p->pgdir);
-        p->pid = 0;
-        p->parent = 0;
-        p->name[0] = 0;
-        p->killed = 0;
-        p->state = UNUSED;
-
-        if (status) *status = p->exitstatus; // Lab1: Set status if it exists
-
-        release(&ptable.lock);
-        return pid;
-      }
-    }
-
-    // No point waiting if we don't have any children.
-    if(!havekids || curproc->killed){
-      release(&ptable.lock);
-      return -1;
-    }
-
-    // Wait for children to exit.  (See wakeup1 call in proc_exit.)
-    sleep(curproc, &ptable.lock);  //DOC: wait-sleep
-  }
-}
-
-// Lab 2: Sets the priority of a process. This is a system call.
-int setpriority(int priority) {
-
-  struct proc *curproc = myproc(); // Grab the current proccess
-
-  if (!curproc) { // Check if we failed to grab.
-    return -1; // Terminate
-  }
-
-  acquire(&ptable.lock);         // Get the semaphore to modify the priority of the current proccss
-  curproc-> priority = priority; // Modify the priority of the current proccess
-  release(&ptable.lock);         // Release the lock
-
-  return 0;
-
 }
 
 //PAGEBREAK: 42
@@ -401,7 +325,7 @@ scheduler(void)
   struct proc *p;
   struct cpu *c = mycpu();
   c->proc = 0;
-
+  
   for(;;){
     // Enable interrupts on this processor.
     sti();
@@ -412,25 +336,6 @@ scheduler(void)
       if(p->state != RUNNABLE)
         continue;
 
-      struct proc *s;
-      //Lab 2: Increase the priority of all the waiting processes. LOWER IS BETTER
-      for (s = ptable.proc; s < &ptable.proc[NPROC]; s++) {
-        if (s -> priority > 0) s -> priority = s -> priority - 1;    // Increase setpriority
-        if (s-> priority < 0 || s-> priority > 31) s->priority = 10; // If the priority has gone out of bounds, set it
-                                                                     // to a reasonable guess
-      }
-      //Lab 2: Set p to the procceess with the highest priority (the lowest value) that is also ready
-      for (s = ptable.proc; s < &ptable.proc[NPROC]; s++) {
-        if (s -> state == RUNNABLE && s -> priority < p -> priority) p = s;
-      }
-
-      for (s = ptable.proc; s < &ptable.proc[NPROC]; s++) {
-        if (s->state != RUNNABLE) continue;
-
-          if (s != p) s -> waittime = ticks - s -> starttime; // Ensure that we aren't changing the currently-running proc
-
-      }
-
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
@@ -440,15 +345,6 @@ scheduler(void)
 
       swtch(&(c->scheduler), p->context);
       switchkvm();
-
-      if (s -> priority <= 29) {
-          p -> priority += 2; // Lab 2: Decrease the priority the running proccss.
-                              // By 2 since only doing 1 would cause it to
-                              // slingshot back and forth, defeating the purpose of aging.
-      } else if (s-> priority < 31) {
-        p -> priority += 1;
-      }
-
 
       // Process is done running for now.
       // It should have changed its p->state before coming back.
@@ -522,7 +418,7 @@ void
 sleep(void *chan, struct spinlock *lk)
 {
   struct proc *p = myproc();
-
+  
   if(p == 0)
     panic("sleep");
 

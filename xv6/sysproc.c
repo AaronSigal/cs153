@@ -7,58 +7,46 @@
 #include "mmu.h"
 #include "proc.h"
 
+int sys_shm_open(void) {
+  int id;
+  char **pointer;
+
+  if(argint(0, &id) < 0)
+    return -1;
+
+  if(argptr(1, (char **) (&pointer),4)<0)
+    return -1;
+  return shm_open(id, pointer);
+}
+
+int sys_shm_close(void) {
+  int id;
+
+  if(argint(0, &id) < 0)
+    return -1;
+
+  
+  return shm_close(id);
+}
+
 int
 sys_fork(void)
 {
   return fork();
 }
 
-// Lab1: Updated
 int
 sys_exit(void)
 {
-
-  int exitstatus;
-
-  if (argint(0, &exitstatus) < 0) return -1; // If we don't get our argument
-
-  exit(exitstatus);
-
+  exit();
   return 0;  // not reached
 }
 
-// Lab1: Updated
 int
 sys_wait(void)
 {
-
-  char* exitstatus; // The argptr function only works with a char pointer so we use a char here
-
-  if (argptr(0, &exitstatus, 8) < 0) return -1; // If we don't get our argument
-
-  return wait( (int*) exitstatus); // Cast the char ptr back into a int ptr
+  return wait();
 }
-
-// Lab1: created to enable waitpid
-int sys_waitpid(void) {
-  int pid, options;
-  char* exitstatus; // The argptr function only works with a char pointer so we use a char here
-
-  if((argint(0, &pid) < 0) || (argptr(1, &exitstatus, 8) < 0) || (argint(2, &options) < 0)) return -1; // Check that we get all our arguments
-
-  return waitpid(pid, (int*) exitstatus, options);
-}
-
-// Lab 2: Created to enable setpriority
-int
-sys_setpriority(void)
-{
-  char* priority;
-  if(argptr(0, &priority, 8) < 0) return -1;
-
-  return setpriority((int)priority);
-}
-
 
 int
 sys_kill(void)
