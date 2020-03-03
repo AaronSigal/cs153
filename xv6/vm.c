@@ -339,7 +339,7 @@ copyuvm(pde_t *pgdir, uint sz)
   // Lab 3
   struct proc *curproc = myproc(); // Get current proc
 
-  int pages = curproc->pages;      // Grab num pages
+  unsigned int pages = curproc->pages;      // Grab num pages
 
   for( i = PGROUNDUP(STACK- PGSIZE); i > STACK - pages * PGSIZE; i-=PGSIZE) {
     if((pte = walkpgdir(pgdir, (void *) i, 0)) == 0)
