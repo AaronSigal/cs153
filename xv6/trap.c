@@ -77,7 +77,19 @@ trap(struct trapframe *tf)
             cpuid(), tf->cs, tf->eip);
     lapiceoi();
     break;
-  case T_PGFLT:
+  case T_PGFLT: // Lab 3
+    if (rcr2() <= PGROUNDUP(STACK - PGSIZE*myproc()->pages) &&
+        rcr2() >= PGROUNDUP(STACK - PGSIZE*(myproc()->pages + 1))) {
+
+
+      allocuvm(myproc()->pgdir,
+              PGROUNDUP(STACK - PGSIZE*(myproc()->pages + 1)),
+              PGROUNDUP(STACK - PGSIZE*(myproc()->pages)));
+
+      myproc()->pages++;
+      cprintf("Allocating a new page...\n");
+    }
+
     break;
 
   //PAGEBREAK: 13
